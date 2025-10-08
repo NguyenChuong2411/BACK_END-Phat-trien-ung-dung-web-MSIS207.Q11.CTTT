@@ -4,7 +4,7 @@ using OnlineTestService.Service;
 namespace OnlineTestService.Controllers
 {
     [ApiController]
-    [Route("api/tests")]
+    [Route("api/[controller]")]
     public class OnlineTestController : ControllerBase
     {
         private readonly IOnlineTest _onlineTestService;
@@ -16,7 +16,7 @@ namespace OnlineTestService.Controllers
 
         // GET: /api/tests
         // Lấy danh sách tất cả bài test
-        [HttpGet]
+        [HttpGet("GetAllTests")]
         public async Task<IActionResult> GetAllTests()
         {
             var tests = await _onlineTestService.GetAllTestsAsync();
@@ -25,7 +25,7 @@ namespace OnlineTestService.Controllers
 
         // GET: /api/tests/1
         // Lấy chi tiết một bài test theo id
-        [HttpGet("{id}")]
+        [HttpGet("GetTestDetails/{id}")]
         public async Task<IActionResult> GetTestDetails(int id)
         {
             var testDetails = await _onlineTestService.GetTestDetailsByIdAsync(id);
