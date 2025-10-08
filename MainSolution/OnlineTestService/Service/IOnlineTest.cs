@@ -1,0 +1,10 @@
+﻿using OnlineTestService.Dtos;
+
+namespace OnlineTestService.Service
+{
+    public interface IOnlineTest
+    {
+        Task<IEnumerable<TestListItemDto>> GetAllTestsAsync();
+        Task<FullTestDto?> GetTestDetailsByIdAsync(int testId);
+    }
+}

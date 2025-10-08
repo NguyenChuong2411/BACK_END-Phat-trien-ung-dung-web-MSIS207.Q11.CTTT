@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.4'
 services:
   postgres:
     image: postgres:15
@@ -6,19 +6,22 @@ services:
     restart: always
     environment:
       POSTGRES_USER: dev
-      POSTGRES_PASSWORD: dev
+      POSTGRES_PASSWORD: 123
       POSTGRES_DB: mydb
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  adminer:
-    image: adminer
-    container_name: adminer_container
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
     restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     ports:
-      - "8080:8080"
+      - "8081:80"
 
 volumes:
   postgres_data:
