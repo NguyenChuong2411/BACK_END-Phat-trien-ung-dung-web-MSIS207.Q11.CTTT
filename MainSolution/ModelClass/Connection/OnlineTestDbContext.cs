@@ -15,7 +15,9 @@ namespace ModelClass.connection
         public DbSet<Passage> Passages { get; set; }
         public DbSet<Question> Questions { get; set; }
         public DbSet<QuestionOption> QuestionOptions { get; set; }
-
+        public DbSet<AudioFile> AudioFiles { get; set; }
+        public DbSet<ListeningPart> ListeningParts { get; set; }
+        public DbSet<QuestionGroup> QuestionGroups { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

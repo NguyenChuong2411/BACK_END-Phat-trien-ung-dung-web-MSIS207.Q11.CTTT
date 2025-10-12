@@ -14,7 +14,6 @@ namespace OnlineTestService.Controllers
             _onlineTestService = onlineTestService;
         }
 
-        // GET: /api/tests
         // Lấy danh sách tất cả bài test
         [HttpGet("GetAllTests")]
         public async Task<IActionResult> GetAllTests()
@@ -23,7 +22,6 @@ namespace OnlineTestService.Controllers
             return Ok(tests);
         }
 
-        // GET: /api/tests/1
         // Lấy chi tiết một bài test theo id
         [HttpGet("GetTestDetails/{id}")]
         public async Task<IActionResult> GetTestDetails(int id)
@@ -32,6 +30,17 @@ namespace OnlineTestService.Controllers
             if (testDetails == null)
             {
                 return NotFound($"Không tìm thấy bài test với ID = {id}");
+            }
+            return Ok(testDetails);
+        }
+        // Lấy chi tiết bài thi listening
+        [HttpGet("GetListeningTestDetails/{id}")]
+        public async Task<IActionResult> GetListeningTestDetails(int id)
+        {
+            var testDetails = await _onlineTestService.GetListeningTestDetailsByIdAsync(id);
+            if (testDetails == null)
+            {
+                return NotFound($"Không tìm thấy bài thi Listening với ID = {id}");
             }
             return Ok(testDetails);
         }

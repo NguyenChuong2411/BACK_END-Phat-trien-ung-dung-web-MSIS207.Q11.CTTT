@@ -30,9 +30,16 @@ namespace ModelClass.OnlineTest
         [Column("test_type_id")]
         public int TestTypeId { get; set; }
 
+        [Column("audio_file_id")]
+        public int? AudioFileId { get; set; }
+
         [ForeignKey("TestTypeId")]
         public virtual TestType TestType { get; set; }
 
+        [ForeignKey("AudioFileId")]
+        public virtual AudioFile? AudioFile { get; set; }
+
         public virtual ICollection<Passage> Passages { get; set; } = new List<Passage>();
+        public virtual ICollection<ListeningPart> ListeningParts { get; set; } = new List<ListeningPart>();
     }
 }
