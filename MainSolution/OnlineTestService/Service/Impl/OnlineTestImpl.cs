@@ -7,10 +7,12 @@ namespace OnlineTestService.Service.Impl
     public class OnlineTestImpl : IOnlineTest
     {
         private readonly OnlineTestDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public OnlineTestImpl(OnlineTestDbContext context)
+        public OnlineTestImpl(OnlineTestDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<TestListItemDto>> GetAllTestsAsync()
@@ -74,6 +76,64 @@ namespace OnlineTestService.Service.Impl
             };
 
             return fullTestDto;
+        }
+        public async Task<ListeningTestDto?> GetListeningTestDetailsByIdAsync(int testId)
+        {
+            var test = await _context.Tests
+                .AsNoTracking()
+                .Include(t => t.AudioFile)
+                .Include(t => t.ListeningParts.OrderBy(p => p.PartNumber))
+                    .ThenInclude(p => p.QuestionGroups.OrderBy(g => g.DisplayOrder))
+                        .ThenInclude(g => g.Questions.OrderBy(q => q.QuestionNumber))
+                            .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
+                .FirstOrDefaultAsync(t => t.Id == testId);
+
+            // Một bài thi Listening phải có file audio
+            if (test == null || test.AudioFile == null)
+            {
+                return null;
+            }
+
+            // Xây dựng URL đầy đủ cho file audio
+            var request = _httpContextAccessor.HttpContext.Request;
+            var baseUrl = $"{request.Scheme}://{request.Host}";
+            var fullAudioUrl = $"{baseUrl}{test.AudioFile.StoragePath}";
+
+            // Map từ Model sang DTO
+            var listeningTestDto = new ListeningTestDto
+            {
+                Id = test.Id,
+                Title = test.Title,
+                AudioUrl = fullAudioUrl,
+                Parts = test.ListeningParts.Select(p => new ListeningPartDto
+                {
+                    Id = p.Id,
+                    PartNumber = p.PartNumber,
+                    Title = p.Title,
+                    QuestionGroups = p.QuestionGroups.Select(g => new QuestionGroupDto
+                    {
+                        Id = g.Id,
+                        InstructionText = g.InstructionText,
+                        // Tái sử dụng logic map QuestionDto từ hàm GetTestDetailsByIdAsync
+                        Questions = g.Questions.Select(q => new QuestionDto
+                        {
+                            Id = q.Id,
+                            QuestionNumber = q.QuestionNumber,
+                            QuestionType = q.QuestionType,
+                            Prompt = q.Prompt,
+                            TableData = q.TableData,
+                            Options = q.Options.Select(o => new QuestionOptionDto
+                            {
+                                Id = o.Id,
+                                OptionLabel = o.OptionLabel,
+                                OptionText = o.OptionText
+                            }).ToList()
+                        }).ToList()
+                    }).ToList()
+                }).ToList()
+            };
+
+            return listeningTestDto;
         }
     }
 }
