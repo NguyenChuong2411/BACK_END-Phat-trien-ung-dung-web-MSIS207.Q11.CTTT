@@ -18,6 +18,8 @@ namespace ModelClass.connection
         public DbSet<AudioFile> AudioFiles { get; set; }
         public DbSet<ListeningPart> ListeningParts { get; set; }
         public DbSet<QuestionGroup> QuestionGroups { get; set; }
+        public DbSet<TestAttempt> TestAttempts { get; set; }
+        public DbSet<UserAnswer> UserAnswers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
