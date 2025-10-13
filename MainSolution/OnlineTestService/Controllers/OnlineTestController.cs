@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using OnlineTestService.Dtos;
 using OnlineTestService.Service;
 
 namespace OnlineTestService.Controllers
@@ -43,6 +44,29 @@ namespace OnlineTestService.Controllers
                 return NotFound($"Không tìm thấy bài thi Listening với ID = {id}");
             }
             return Ok(testDetails);
+        }
+        [HttpPost("Submit")]
+        public async Task<IActionResult> SubmitTest([FromBody] TestSubmissionDto submission)
+        {
+            try
+            {
+                var attemptId = await _onlineTestService.SubmitTestAsync(submission);
+                return Ok(new { AttemptId = attemptId });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Đã xảy ra lỗi khi nộp bài.");
+            }
+        }
+        [HttpGet("Result/{attemptId}")]
+        public async Task<IActionResult> GetResult(int attemptId)
+        {
+            var result = await _onlineTestService.GetTestResultAsync(attemptId);
+            if (result == null)
+            {
+                return NotFound("Không tìm thấy kết quả làm bài.");
+            }
+            return Ok(result);
         }
     }
 }

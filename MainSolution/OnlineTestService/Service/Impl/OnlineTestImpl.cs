@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ModelClass.connection;
+using ModelClass.OnlineTest;
 using OnlineTestService.Dtos;
+using System.Text.Json;
 
 namespace OnlineTestService.Service.Impl
 {
@@ -134,6 +136,223 @@ namespace OnlineTestService.Service.Impl
             };
 
             return listeningTestDto;
+        }
+        // HÀM HELPER CHẤM ĐIỂM
+        private bool CheckAnswer(Question question, Dictionary<string, object> userAnswers)
+        {
+            try
+            {
+                // Chuyển đổi object sang JsonElement để xử lý nhất quán
+                if (!userAnswers.TryGetValue(question.Id.ToString(), out var userAnswerObject) && question.QuestionType != "table")
+                {
+                    return false;
+                }
+
+                switch (question.QuestionType)
+                {
+                    case "fill-blank":
+                    case "multiple-choice":
+                        {
+                            var correctAnswerDto = JsonSerializer.Deserialize<CorrectAnswerDto>(question.CorrectAnswers.RootElement.GetRawText());
+                            string userAnswer = userAnswerObject?.ToString() ?? "";
+                            return userAnswer.Trim().Equals(correctAnswerDto?.Answer, StringComparison.OrdinalIgnoreCase);
+                        }
+
+                    case "multiple-choice-multiple-answer":
+                        {
+                            var correctAnswerDto = JsonSerializer.Deserialize<CorrectAnswerDto>(question.CorrectAnswers.RootElement.GetRawText());
+                            var correctSet = new HashSet<string>(correctAnswerDto?.Answers ?? new List<string>());
+
+                            if (userAnswerObject is JsonElement userAnswerJson && userAnswerJson.ValueKind == JsonValueKind.Array)
+                            {
+                                var userSet = new HashSet<string>(userAnswerJson.Deserialize<List<string>>() ?? new List<string>());
+                                return correctSet.SetEquals(userSet);
+                            }
+                            return false;
+                        }
+
+                    case "table":
+                        {
+                            var correctAnswersDict = JsonSerializer.Deserialize<Dictionary<string, string>>(question.CorrectAnswers.RootElement.GetRawText());
+                            if (correctAnswersDict == null || correctAnswersDict.Count == 0) return true;
+
+                            foreach (var correctAnswerPair in correctAnswersDict)
+                            {
+                                string userAnswerKey = $"q{question.Id}_{correctAnswerPair.Key}";
+                                if (!userAnswers.TryGetValue(userAnswerKey, out var userAnswerTableObject) ||
+                                    !userAnswerTableObject.ToString().Trim().Equals(correctAnswerPair.Value, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return false; // Sai một ô là sai cả câu
+                                }
+                            }
+                            return true;
+                        }
+
+                    default:
+                        return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // HÀM HELPER LẤY CÂU TRẢ LỜI CỦA NGƯỜI DÙNG ĐỂ LƯU
+        private JsonDocument GetUserAnswerForSaving(Question question, Dictionary<string, object> userAnswers)
+        {
+            if (question.QuestionType == "table")
+            {
+                var tableAnswers = new Dictionary<string, string>();
+                var correctAnswersDict = JsonSerializer.Deserialize<Dictionary<string, string>>(question.CorrectAnswers.RootElement.GetRawText());
+
+                foreach (var key in correctAnswersDict.Keys)
+                {
+                    string userAnswerKey = $"q{question.Id}_{key}";
+                    if (userAnswers.TryGetValue(userAnswerKey, out var userAnswerObject))
+                    {
+                        tableAnswers[key] = userAnswerObject?.ToString() ?? "";
+                    }
+                }
+                return JsonDocument.Parse(JsonSerializer.Serialize(tableAnswers));
+            }
+
+            if (userAnswers.TryGetValue(question.Id.ToString(), out var answerObject))
+            {
+                // Serialize lại object để đảm bảo định dạng JSON đúng
+                return JsonDocument.Parse(JsonSerializer.Serialize(answerObject));
+            }
+
+            return JsonDocument.Parse("{}"); // Trả về JSON rỗng nếu không có câu trả lời
+        }
+        public async Task<int> SubmitTestAsync(TestSubmissionDto submission)
+        {
+            // BƯỚC 1: Lấy bài test và tất cả các câu hỏi liên quan một cách trực tiếp
+            var test = await _context.Tests
+                .Include(t => t.Passages)
+                    .ThenInclude(p => p.Questions)
+                .Include(t => t.ListeningParts)
+                    .ThenInclude(lp => lp.QuestionGroups)
+                        .ThenInclude(qg => qg.Questions)
+                .FirstOrDefaultAsync(t => t.Id == submission.TestId);
+
+            if (test == null)
+            {
+                throw new Exception("Test not found"); // Hoặc một exception tùy chỉnh
+            }
+
+            // BƯỚC 2: Tập hợp tất cả câu hỏi vào một Dictionary để dễ tra cứu
+            var allQuestionsInTest = new Dictionary<int, Question>();
+
+            // Lấy câu hỏi từ Reading Passages
+            if (test.Passages != null)
+            {
+                foreach (var question in test.Passages.SelectMany(p => p.Questions))
+                {
+                    allQuestionsInTest[question.Id] = question;
+                }
+            }
+            // Lấy câu hỏi từ Listening Parts
+            if (test.ListeningParts != null)
+            {
+                foreach (var question in test.ListeningParts.SelectMany(lp => lp.QuestionGroups).SelectMany(qg => qg.Questions))
+                {
+                    allQuestionsInTest[question.Id] = question;
+                }
+            }
+
+            // --- PHẦN CÒN LẠI CỦA LOGIC GIỮ NGUYÊN ---
+            int score = 0;
+            var userAnswersToSave = new List<UserAnswer>();
+
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var testAttempt = new TestAttempt
+                {
+                    TestId = submission.TestId,
+                    UserId = null,
+                    Score = 0,
+                    TotalQuestions = allQuestionsInTest.Values.Count(q => q.QuestionType != "table-child"),
+                    SubmittedAt = DateTime.UtcNow
+                };
+                _context.TestAttempts.Add(testAttempt);
+                await _context.SaveChangesAsync();
+
+                foreach (var question in allQuestionsInTest.Values)
+                {
+                    if (question.QuestionType == "table-child") continue;
+
+                    bool isCorrect = CheckAnswer(question, submission.Answers);
+                    if (isCorrect)
+                    {
+                        score++;
+                    }
+
+                    JsonDocument userAnswerJson = GetUserAnswerForSaving(question, submission.Answers);
+
+                    userAnswersToSave.Add(new UserAnswer
+                    {
+                        TestAttemptId = testAttempt.Id,
+                        QuestionId = question.Id,
+                        UserAnswerJson = userAnswerJson,
+                        IsCorrect = isCorrect
+                    });
+                }
+
+                testAttempt.Score = score;
+                _context.UserAnswers.AddRange(userAnswersToSave);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return testAttempt.Id;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
+        }
+
+        // Phương thức để lấy kết quả
+        public async Task<TestResultDto?> GetTestResultAsync(int attemptId)
+        {
+            var attempt = await _context.TestAttempts
+                .AsNoTracking()
+                .Include(a => a.Test)
+                .Include(a => a.UserAnswers)
+                    .ThenInclude(ua => ua.Question)
+                        .ThenInclude(q => q.Options)
+                .FirstOrDefaultAsync(a => a.Id == attemptId);
+
+            if (attempt == null) return null;
+
+            var result = new TestResultDto
+            {
+                TestTitle = attempt.Test.Title,
+                Score = attempt.Score,
+                TotalQuestions = attempt.TotalQuestions,
+                Questions = attempt.UserAnswers.Select(ua => new QuestionResultDto
+                {
+                    QuestionNumber = ua.Question.QuestionNumber,
+                    Prompt = ua.Question.Prompt,
+                    UserAnswer = ua.UserAnswerJson,
+                    CorrectAnswer = ua.Question.CorrectAnswers,
+                    IsCorrect = ua.IsCorrect,
+                    QuestionType = ua.Question.QuestionType,
+                    Options = ua.Question.Options.Select(o => new QuestionOptionDto
+                    {
+                        Id = o.Id,
+                        OptionLabel = o.OptionLabel,
+                        OptionText = o.OptionText
+                    }).ToList()
+                }).OrderBy(q => q.QuestionNumber).ToList()
+            };
+
+            return result;
         }
     }
 }
