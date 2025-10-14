@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ModelClass.OnlineTest;
+using ModelClass.UserInfo;
 
 namespace ModelClass.connection
 {
@@ -20,6 +21,8 @@ namespace ModelClass.connection
         public DbSet<QuestionGroup> QuestionGroups { get; set; }
         public DbSet<TestAttempt> TestAttempts { get; set; }
         public DbSet<UserAnswer> UserAnswers { get; set; }
+        public DbSet<User> Users { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -29,6 +32,7 @@ namespace ModelClass.connection
             modelBuilder.Entity<Passage>().ToTable("passages", "online_test");
             modelBuilder.Entity<Question>().ToTable("questions", "online_test");
             modelBuilder.Entity<QuestionOption>().ToTable("questionoptions", "online_test");
+            modelBuilder.Entity<User>().ToTable("users", "user_info");
         }
     }
 }
