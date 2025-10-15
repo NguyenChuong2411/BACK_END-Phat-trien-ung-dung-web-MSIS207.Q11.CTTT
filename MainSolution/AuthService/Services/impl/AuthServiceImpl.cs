@@ -3,6 +3,9 @@ using ModelClass.UserInfo;        // Using để lấy Model User
 using AuthService.Dtos;           // Using để lấy DTOs
 using System.Security.Claims;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services.impl
 {
@@ -19,23 +22,20 @@ namespace AuthService.Services.impl
 
         public async Task<bool> RegisterAsync(RegisterDto registerDto)
         {
-            // 1. Kiểm tra xem email đã tồn tại trong database chưa
             if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                return false; // Trả về false nếu email đã tồn tại
+                return false;
             }
 
-            // 2. Tạo một đối tượng User mới
             var user = new User
             {
                 FullName = registerDto.FullName,
                 Email = registerDto.Email,
-                // 3. Mã hóa mật khẩu bằng BCrypt trước khi lưu
+                // Mã hóa mật khẩu bằng BCrypt trước khi lưu
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
                 CreatedAt = DateTime.UtcNow
             };
 
-            // 4. Thêm user vào DbContext và lưu thay đổi
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return true;
@@ -43,17 +43,13 @@ namespace AuthService.Services.impl
 
         public async Task<string?> LoginAsync(LoginDto loginDto)
         {
-            // 1. Tìm user trong database bằng email
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 
-            // 2. Kiểm tra user có tồn tại không VÀ mật khẩu có khớp không
             // BCrypt.Verify sẽ so sánh mật khẩu người dùng nhập với chuỗi hash trong DB
             if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             {
-                return null; // Trả về null nếu thông tin không chính xác
+                return null;
             }
-
-            // 3. Nếu mọi thứ chính xác, tạo và trả về JWT token
             return GenerateJwtToken(user);
         }
 
