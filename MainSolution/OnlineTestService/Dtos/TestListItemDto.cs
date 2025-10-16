@@ -8,5 +8,6 @@
         public string? Description { get; set; }
         public string Duration { get; set; }
         public string Questions { get; set; }
+        public int Attempts { get; set; }
     }
-}
+}   

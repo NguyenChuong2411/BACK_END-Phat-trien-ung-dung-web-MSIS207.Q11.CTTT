@@ -3,6 +3,7 @@ using ModelClass.connection;
 using ModelClass.OnlineTest;
 using OnlineTestService.Dtos;
 using System.Text.Json;
+using System.Security.Claims;
 
 namespace OnlineTestService.Service.Impl
 {
@@ -21,8 +22,9 @@ namespace OnlineTestService.Service.Impl
         {
             // Truy vấn và join với TestType để lấy tên loại đề thi
             return await _context.Tests
-                .AsNoTracking() // Tối ưu hiệu năng cho truy vấn chỉ đọc
+                .AsNoTracking()
                 .Include(t => t.TestType)
+                .Include(t => t.TestAttempts)
                 .Select(t => new TestListItemDto
                 {
                     Id = t.Id,
@@ -30,7 +32,8 @@ namespace OnlineTestService.Service.Impl
                     Type = t.TestType.Name,
                     Description = t.Description,
                     Duration = $"{t.DurationMinutes} phút",
-                    Questions = $"{t.TotalQuestions} câu hỏi"
+                    Questions = $"{t.TotalQuestions} câu hỏi",
+                    Attempts = t.TestAttempts.Count()
                 })
                 .ToListAsync();
         }
@@ -227,7 +230,7 @@ namespace OnlineTestService.Service.Impl
         }
         public async Task<int> SubmitTestAsync(TestSubmissionDto submission)
         {
-            // BƯỚC 1: Lấy bài test và tất cả các câu hỏi liên quan một cách trực tiếp
+            // Lấy bài test và tất cả các câu hỏi liên quan một cách trực tiếp
             var test = await _context.Tests
                 .Include(t => t.Passages)
                     .ThenInclude(p => p.Questions)
@@ -238,10 +241,10 @@ namespace OnlineTestService.Service.Impl
 
             if (test == null)
             {
-                throw new Exception("Test not found"); // Hoặc một exception tùy chỉnh
+                throw new Exception("Test not found");
             }
 
-            // BƯỚC 2: Tập hợp tất cả câu hỏi vào một Dictionary để dễ tra cứu
+            // Tập hợp tất cả câu hỏi vào một Dictionary để dễ tra cứu
             var allQuestionsInTest = new Dictionary<int, Question>();
 
             // Lấy câu hỏi từ Reading Passages
@@ -261,7 +264,15 @@ namespace OnlineTestService.Service.Impl
                 }
             }
 
-            // --- PHẦN CÒN LẠI CỦA LOGIC GIỮ NGUYÊN ---
+            // LẤY USER ID TỪ TOKEN
+            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                // Dòng này để phòng trường hợp endpoint không được bảo vệ bằng [Authorize]
+                throw new UnauthorizedAccessException("Không thể xác thực người dùng từ token.");
+            }
+            var userId = int.Parse(userIdClaim.Value);
+
             int score = 0;
             var userAnswersToSave = new List<UserAnswer>();
 
@@ -272,7 +283,7 @@ namespace OnlineTestService.Service.Impl
                 var testAttempt = new TestAttempt
                 {
                     TestId = submission.TestId,
-                    UserId = null,
+                    UserId = userId,
                     Score = 0,
                     TotalQuestions = allQuestionsInTest.Values.Count(q => q.QuestionType != "table-child"),
                     SubmittedAt = DateTime.UtcNow

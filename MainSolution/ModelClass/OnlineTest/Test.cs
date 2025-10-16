@@ -32,6 +32,11 @@ namespace ModelClass.OnlineTest
 
         [Column("audio_file_id")]
         public int? AudioFileId { get; set; }
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; }
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; }
 
         [ForeignKey("TestTypeId")]
         public virtual TestType TestType { get; set; }
@@ -41,5 +46,6 @@ namespace ModelClass.OnlineTest
 
         public virtual ICollection<Passage> Passages { get; set; } = new List<Passage>();
         public virtual ICollection<ListeningPart> ListeningParts { get; set; } = new List<ListeningPart>();
+        public virtual ICollection<TestAttempt> TestAttempts { get; set; } = new List<TestAttempt>();
     }
 }

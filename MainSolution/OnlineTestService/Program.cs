@@ -27,8 +27,8 @@ builder.Services.AddDbContext<OnlineTestDbContext>(options =>
 );
 
 // Đăng ký các services cho Dependency Injection
- builder.Services.AddScoped<IOnlineTest, OnlineTestImpl>();
-
+builder.Services.AddScoped<IOnlineTest, OnlineTestImpl>();
+builder.Services.AddScoped<ITestAdminService, TestAdminServiceImpl>();
 // Controllers
 builder.Services.AddControllers();
 
