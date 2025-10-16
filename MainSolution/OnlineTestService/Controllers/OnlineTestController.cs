@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlineTestService.Dtos;
 using OnlineTestService.Service;
 
@@ -46,6 +47,7 @@ namespace OnlineTestService.Controllers
             return Ok(testDetails);
         }
         [HttpPost("Submit")]
+        [Authorize]
         public async Task<IActionResult> SubmitTest([FromBody] TestSubmissionDto submission)
         {
             try

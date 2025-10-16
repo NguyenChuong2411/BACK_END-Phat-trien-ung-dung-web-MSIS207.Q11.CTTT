@@ -1,7 +1,10 @@
 ﻿using AuthService.Services;       // Namespace của IAuthService
 using AuthService.Services.impl;  // Namespace của AuthServiceImpl
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using ModelClass.Connection;      // Để sử dụng AuthDbContext
+using Microsoft.IdentityModel.Tokens;
+using ModelClass.Connection;
+using System.Text;      // Để sử dụng AuthDbContext
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,11 +27,29 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 
 // Đăng ký Service và Implementation cho Dependency Injection
 builder.Services.AddScoped<IAuthService, AuthServiceImpl>();
-
+builder.Services.AddScoped<IUserService, UserServiceImpl>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
 
 // --- Xây dựng App ---
 var app = builder.Build();
@@ -42,6 +63,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
