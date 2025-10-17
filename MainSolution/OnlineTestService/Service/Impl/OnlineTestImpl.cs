@@ -145,24 +145,35 @@ namespace OnlineTestService.Service.Impl
         {
             try
             {
-                // Chuyển đổi object sang JsonElement để xử lý nhất quán
-                if (!userAnswers.TryGetValue(question.Id.ToString(), out var userAnswerObject) && question.QuestionType != "table")
-                {
-                    return false;
-                }
+                var correctAnswersRoot = question.CorrectAnswers.RootElement;
 
                 switch (question.QuestionType)
                 {
                     case "fill-blank":
                     case "multiple-choice":
                         {
-                            var correctAnswerDto = JsonSerializer.Deserialize<CorrectAnswerDto>(question.CorrectAnswers.RootElement.GetRawText());
+                            if (!correctAnswersRoot.TryGetProperty("answer", out var answerProperty))
+                            {
+                                return false;
+                            }
+                            string correctAnswer = answerProperty.GetString() ?? "";
+
+                            if (!userAnswers.TryGetValue(question.Id.ToString(), out var userAnswerObject))
+                            {
+                                return false;
+                            }
                             string userAnswer = userAnswerObject?.ToString() ?? "";
-                            return userAnswer.Trim().Equals(correctAnswerDto?.Answer, StringComparison.OrdinalIgnoreCase);
+
+                            return correctAnswer.Split(';')
+                                .Any(ans => userAnswer.Trim().Equals(ans.Trim(), StringComparison.OrdinalIgnoreCase));
                         }
 
                     case "multiple-choice-multiple-answer":
                         {
+                            if (!userAnswers.TryGetValue(question.Id.ToString(), out var userAnswerObject))
+                            {
+                                return false;
+                            }
                             var correctAnswerDto = JsonSerializer.Deserialize<CorrectAnswerDto>(question.CorrectAnswers.RootElement.GetRawText());
                             var correctSet = new HashSet<string>(correctAnswerDto?.Answers ?? new List<string>());
 
@@ -185,7 +196,7 @@ namespace OnlineTestService.Service.Impl
                                 if (!userAnswers.TryGetValue(userAnswerKey, out var userAnswerTableObject) ||
                                     !userAnswerTableObject.ToString().Trim().Equals(correctAnswerPair.Value, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    return false; // Sai một ô là sai cả câu
+                                    return false;
                                 }
                             }
                             return true;
@@ -195,8 +206,9 @@ namespace OnlineTestService.Service.Impl
                         return false;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error checking answer for question ID {question.Id}: {ex.Message}");
                 return false;
             }
         }

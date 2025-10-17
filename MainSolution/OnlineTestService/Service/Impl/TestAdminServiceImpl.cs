@@ -89,11 +89,12 @@ namespace OnlineTestService.Service.Impl
             return await _context.Tests
                 .AsNoTracking()
                 .Include(t => t.TestType)
-                .OrderByDescending(t => t.UpdatedAt)
+                .OrderBy(t => t.Id)
                 .Select(t => new AdminTestListItemDto
                 {
                     Id = t.Id,
                     Title = t.Title,
+                    Description = t.Description,
                     TestType = t.TestType.Name,
                     QuestionCount = t.TotalQuestions,
                     CreatedAt = t.CreatedAt,
