@@ -14,8 +14,8 @@ namespace OnlineTestService.Dtos
     {
         public int QuestionNumber { get; set; }
         public string? Prompt { get; set; }
-        public JsonDocument? UserAnswer { get; set; }
-        public JsonDocument CorrectAnswer { get; set; }
+        public JsonElement? UserAnswer { get; set; }
+        public JsonElement CorrectAnswer { get; set; }
         public bool IsCorrect { get; set; }
         public string QuestionType { get; set; }
         public List<QuestionOptionDto> Options { get; set; } = new List<QuestionOptionDto>();
