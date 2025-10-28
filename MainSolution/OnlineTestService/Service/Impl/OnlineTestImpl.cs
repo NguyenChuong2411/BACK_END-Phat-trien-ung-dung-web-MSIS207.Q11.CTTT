@@ -29,11 +29,14 @@ namespace OnlineTestService.Service.Impl
                 .AsNoTracking()
                 .Include(t => t.TestType)
                 .Include(t => t.TestAttempts)
+                .Include(t => t.SkillType)
                 .Select(t => new TestListItemDto
                 {
                     Id = t.Id,
                     Title = t.Title,
                     Type = t.TestType.Name,
+                    SkillTypeId = t.SkillTypeId,
+                    SkillName = t.SkillType.Name,
                     Description = t.Description,
                     Duration = $"{t.DurationMinutes} phút",
                     Questions = $"{t.TotalQuestions} câu hỏi",
@@ -59,6 +62,7 @@ namespace OnlineTestService.Service.Impl
             {
                 Id = test.Id,
                 Title = test.Title,
+                SkillTypeId = test.SkillTypeId,
                 Passages = test.Passages.Select(p => new PassageDto
                 {
                     Id = p.Id,
@@ -91,6 +95,7 @@ namespace OnlineTestService.Service.Impl
             {
                 Id = test.Id,
                 Title = test.Title,
+                SkillTypeId = test.SkillTypeId,
                 AudioUrl = fullAudioUrl,
                 Parts = test.ListeningParts.Select(p => new ListeningPartDto
                 {

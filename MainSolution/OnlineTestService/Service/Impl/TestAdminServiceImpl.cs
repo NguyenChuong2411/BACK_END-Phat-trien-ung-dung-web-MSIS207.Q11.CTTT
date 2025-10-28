@@ -89,7 +89,8 @@ namespace OnlineTestService.Service.Impl
             {
                 var test = new Test();
                 MapDtoToEntity(test, dto);
-
+                test.CreatedAt = DateTime.UtcNow;
+                test.UpdatedAt = DateTime.UtcNow;
                 _context.Tests.Add(test);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -149,6 +150,7 @@ namespace OnlineTestService.Service.Impl
             test.Description = dto.Description;
             test.DurationMinutes = dto.DurationMinutes;
             test.TestTypeId = dto.TestTypeId;
+            test.SkillTypeId = dto.SkillTypeId;
             test.AudioFileId = dto.AudioFileId;
             test.Passages.Clear();
             test.ListeningParts.Clear();

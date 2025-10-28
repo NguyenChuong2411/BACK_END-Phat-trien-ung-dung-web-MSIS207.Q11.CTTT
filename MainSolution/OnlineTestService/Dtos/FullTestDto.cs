@@ -6,6 +6,7 @@ namespace OnlineTestService.Dtos
     {
         public int Id { get; set; }
         public string Title { get; set; }
+        public int? SkillTypeId { get; set; }
         public List<PassageDto> Passages { get; set; } = new List<PassageDto>();
     }
 

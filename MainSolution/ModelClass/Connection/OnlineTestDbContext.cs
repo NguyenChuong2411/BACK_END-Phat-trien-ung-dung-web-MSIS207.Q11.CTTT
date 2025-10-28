@@ -23,6 +23,7 @@ namespace ModelClass.connection
         public DbSet<TestAttempt> TestAttempts { get; set; }
         public DbSet<UserAnswer> UserAnswers { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<SkillType> SkillTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -63,6 +64,7 @@ namespace ModelClass.connection
             modelBuilder.Entity<QuestionGroup>().ToTable("questiongroups", "online_test");
             modelBuilder.Entity<TestAttempt>().ToTable("testattempts", "online_test");
             modelBuilder.Entity<UserAnswer>().ToTable("useranswers", "online_test");
+            modelBuilder.Entity<SkillType>().ToTable("skilltypes", "online_test");
         }
     }
 }

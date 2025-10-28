@@ -10,6 +10,7 @@ namespace OnlineTestService.Dtos
         public string? Description { get; set; }
         public int DurationMinutes { get; set; }
         public int TestTypeId { get; set; }
+        public int? SkillTypeId { get; set; }
         public int? AudioFileId { get; set; } // Dành cho bài thi Listening
 
         // Dùng một trong hai, tùy thuộc vào loại đề thi

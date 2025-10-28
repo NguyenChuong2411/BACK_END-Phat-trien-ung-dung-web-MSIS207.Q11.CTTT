@@ -30,6 +30,9 @@ namespace ModelClass.OnlineTest
         [Column("test_type_id")]
         public int TestTypeId { get; set; }
 
+        [Column("skill_type_id")]
+        public int? SkillTypeId { get; set; }
+
         [Column("audio_file_id")]
         public int? AudioFileId { get; set; }
         [Column("created_at")]
@@ -40,6 +43,9 @@ namespace ModelClass.OnlineTest
 
         [ForeignKey("TestTypeId")]
         public virtual TestType TestType { get; set; }
+
+        [ForeignKey("SkillTypeId")]
+        public virtual SkillType? SkillType { get; set; }
 
         [ForeignKey("AudioFileId")]
         public virtual AudioFile? AudioFile { get; set; }
