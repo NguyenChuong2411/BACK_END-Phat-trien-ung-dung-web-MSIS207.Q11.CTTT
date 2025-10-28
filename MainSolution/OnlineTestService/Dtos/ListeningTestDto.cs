@@ -4,6 +4,7 @@
     {
         public int Id { get; set; }
         public string Title { get; set; }
+        public int? SkillTypeId { get; set; }
         public string AudioUrl { get; set; }
         public List<ListeningPartDto> Parts { get; set; } = new List<ListeningPartDto>();
     }
