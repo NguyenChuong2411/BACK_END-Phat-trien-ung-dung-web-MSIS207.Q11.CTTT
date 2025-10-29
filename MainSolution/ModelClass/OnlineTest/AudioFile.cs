@@ -23,5 +23,7 @@ namespace ModelClass.OnlineTest
 
         [Column("duration_seconds")]
         public int? DurationSeconds { get; set; }
+        [Column("uploaded_at")]
+        public DateTime UploadedAt { get; set; }
     }
 }

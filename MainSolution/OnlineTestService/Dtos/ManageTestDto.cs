@@ -12,6 +12,7 @@ namespace OnlineTestService.Dtos
         public int TestTypeId { get; set; }
         public int? SkillTypeId { get; set; }
         public int? AudioFileId { get; set; } // Dành cho bài thi Listening
+        public string? AudioFilePath { get; set; }
 
         // Dùng một trong hai, tùy thuộc vào loại đề thi
         public List<ManagePassageDto> Passages { get; set; } = new();

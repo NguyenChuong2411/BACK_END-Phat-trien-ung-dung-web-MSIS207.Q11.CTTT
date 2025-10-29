@@ -29,6 +29,9 @@ builder.Services.AddDbContext<OnlineTestDbContext>(options =>
 // Đăng ký các services cho Dependency Injection
 builder.Services.AddScoped<IOnlineTest, OnlineTestImpl>();
 builder.Services.AddScoped<ITestAdminService, TestAdminServiceImpl>();
+builder.Services.AddScoped<IFileService, FileServiceImpl>();
+
+builder.Services.AddSingleton(builder.Environment);
 // Controllers
 builder.Services.AddControllers();
 
@@ -67,11 +70,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
-
+app.UseStaticFiles();
+var storagePath = Path.Combine(builder.Environment.ContentRootPath, "Storage");
+if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Storage")),
+    FileProvider = new PhysicalFileProvider(storagePath),
     RequestPath = "/storage"
 });
 app.UseAuthentication();

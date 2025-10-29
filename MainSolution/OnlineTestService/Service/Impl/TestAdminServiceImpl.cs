@@ -9,10 +9,12 @@ namespace OnlineTestService.Service.Impl
     public class TestAdminServiceImpl : ITestAdminService
     {
         private readonly OnlineTestDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TestAdminServiceImpl(OnlineTestDbContext context)
+        public TestAdminServiceImpl(OnlineTestDbContext context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IEnumerable<AdminTestListItemDto>> GetAllTestsForAdminAsync()
@@ -38,6 +40,7 @@ namespace OnlineTestService.Service.Impl
         {
             var test = await _context.Tests
                 .AsNoTracking()
+                .Include(t => t.AudioFile)
                 .Include(t => t.Passages.OrderBy(p => p.DisplayOrder))
                     .ThenInclude(p => p.Questions.OrderBy(q => q.QuestionNumber))
                         .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
@@ -49,6 +52,14 @@ namespace OnlineTestService.Service.Impl
 
             if (test == null) return null;
 
+            string? fullAudioUrl = null;
+            if (test.AudioFile != null && _httpContextAccessor.HttpContext != null)
+            {
+                var request = _httpContextAccessor.HttpContext.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}";
+                fullAudioUrl = $"{baseUrl}{test.AudioFile.StoragePath}";
+            }
+
             // Map từ entity sang DTO để gửi về cho client
             return new ManageTestDto
             {
@@ -58,6 +69,7 @@ namespace OnlineTestService.Service.Impl
                 DurationMinutes = test.DurationMinutes,
                 TestTypeId = test.TestTypeId,
                 AudioFileId = test.AudioFileId,
+                AudioFilePath = fullAudioUrl,
                 Passages = test.Passages.Select(p => new ManagePassageDto
                 {
                     Id = p.Id,
@@ -178,6 +190,8 @@ namespace OnlineTestService.Service.Impl
                     foreach (var questionDto in groupDto.Questions)
                     {
                         var question = MapQuestionDtoToEntity(questionDto);
+                        question.QuestionGroup = group;
+                        question.PassageId = null;
                         group.Questions.Add(question);
                         totalQuestionsCount += GetQuestionPointCount(question.CorrectAnswers); // Tính điểm
                     }
