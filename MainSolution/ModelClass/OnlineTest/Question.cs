@@ -17,7 +17,7 @@ namespace ModelClass.OnlineTest
         public int Id { get; set; }
 
         [Column("passage_id")]
-        public int PassageId { get; set; }
+        public int? PassageId { get; set; }
 
         [Column("question_number")]
         public int QuestionNumber { get; set; }
