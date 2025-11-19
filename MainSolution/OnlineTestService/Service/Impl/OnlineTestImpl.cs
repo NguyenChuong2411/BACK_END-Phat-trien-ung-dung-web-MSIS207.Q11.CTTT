@@ -53,6 +53,8 @@ namespace OnlineTestService.Service.Impl
                 .Include(t => t.Passages.OrderBy(p => p.DisplayOrder))
                     .ThenInclude(p => p.Questions.OrderBy(q => q.QuestionNumber))
                         .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
+                .Include(t => t.WritingTasks.OrderBy(w => w.DisplayOrder))
+                .Include(t => t.SpeakingQuestions.OrderBy(s => s.DisplayOrder))
                 .FirstOrDefaultAsync(t => t.Id == testId);
 
             if (test == null) return null;
@@ -69,6 +71,22 @@ namespace OnlineTestService.Service.Impl
                     Title = p.Title,
                     Content = p.Content,
                     Questions = p.Questions.Select(MapQuestionToDto).ToList()
+                }).ToList(),
+                WritingTasks = test.WritingTasks.Select(w => new WritingTaskDto
+                {
+                    Id = w.Id,
+                    TaskType = w.TaskType,
+                    Prompt = w.Prompt,
+                    DurationMinutes = w.DurationMinutes ?? 0,
+                    MinWords = w.MinWords ?? 0
+                }).ToList(),
+                SpeakingQuestions = test.SpeakingQuestions.Select(s => new SpeakingQuestionDto
+                {
+                    Id = s.Id,
+                    PartName = s.PartName,
+                    QuestionText = s.QuestionText,
+                    PreparationTime = s.PreparationTimeSeconds ?? 0,
+                    ResponseTime = s.ResponseTimeSeconds ?? 0
                 }).ToList()
             };
         }
@@ -82,6 +100,9 @@ namespace OnlineTestService.Service.Impl
                     .ThenInclude(p => p.QuestionGroups.OrderBy(g => g.DisplayOrder))
                         .ThenInclude(g => g.Questions.OrderBy(q => q.QuestionNumber))
                             .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
+                .Include(t => t.Passages.OrderBy(p => p.DisplayOrder))
+                    .ThenInclude(p => p.Questions.OrderBy(q => q.QuestionNumber))
+                        .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
                 .FirstOrDefaultAsync(t => t.Id == testId);
 
             if (test == null || test.AudioFile == null) return null;
@@ -108,6 +129,13 @@ namespace OnlineTestService.Service.Impl
                         InstructionText = g.InstructionText,
                         Questions = g.Questions.Select(MapQuestionToDto).ToList()
                     }).ToList()
+                }).ToList(),
+                Passages = test.Passages.Select(p => new PassageDto
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Content = p.Content,
+                    Questions = p.Questions.Select(MapQuestionToDto).ToList()
                 }).ToList()
             };
         }

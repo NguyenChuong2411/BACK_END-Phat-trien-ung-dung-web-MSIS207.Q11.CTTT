@@ -22,7 +22,7 @@ namespace OnlineTestService.Service.Impl
             return await _context.Tests
                 .AsNoTracking()
                 .Include(t => t.TestType)
-                .OrderBy(t => t.Id)
+                .OrderByDescending(t => t.Id)
                 .Select(t => new AdminTestListItemDto
                 {
                     Id = t.Id,
@@ -48,6 +48,8 @@ namespace OnlineTestService.Service.Impl
                     .ThenInclude(lp => lp.QuestionGroups.OrderBy(qg => qg.DisplayOrder))
                         .ThenInclude(qg => qg.Questions.OrderBy(q => q.QuestionNumber))
                             .ThenInclude(q => q.Options.OrderBy(o => o.DisplayOrder))
+                .Include(t => t.WritingTasks.OrderBy(w => w.DisplayOrder))
+                .Include(t => t.SpeakingQuestions.OrderBy(s => s.DisplayOrder))
                 .FirstOrDefaultAsync(t => t.Id == testId);
 
             if (test == null) return null;
@@ -90,6 +92,25 @@ namespace OnlineTestService.Service.Impl
                         DisplayOrder = qg.DisplayOrder,
                         Questions = qg.Questions.Select(MapQuestionEntityToDto).ToList()
                     }).ToList()
+                }).ToList(),
+                WritingTasks = test.WritingTasks.Select(w => new ManageWritingTaskDto
+                {
+                    Id = w.Id,
+                    Prompt = w.Prompt,
+                    TaskType = w.TaskType,
+                    MinWords = w.MinWords ?? 0,
+                    MaxScore = w.MaxScore ?? 0,
+                    DurationMinutes = w.DurationMinutes ?? 0,
+                    DisplayOrder = w.DisplayOrder
+                }).ToList(),
+                SpeakingQuestions = test.SpeakingQuestions.Select(s => new ManageSpeakingQuestionDto
+                {
+                    Id = s.Id,
+                    QuestionText = s.QuestionText,
+                    PartName = s.PartName,
+                    PreparationTime = s.PreparationTimeSeconds ?? 0,
+                    ResponseTime = s.ResponseTimeSeconds ?? 0,
+                    DisplayOrder = s.DisplayOrder
                 }).ToList()
             };
         }
@@ -199,7 +220,46 @@ namespace OnlineTestService.Service.Impl
                 }
                 test.ListeningParts.Add(part);
             }
-            test.TotalQuestions = totalQuestionsCount;
+            // Xử lý Writing Tasks
+            test.WritingTasks.Clear();
+            foreach (var wDto in dto.WritingTasks)
+            {
+                test.WritingTasks.Add(new WritingTask
+                {
+                    TaskType = wDto.TaskType,
+                    Prompt = wDto.Prompt,
+                    MinWords = wDto.MinWords,
+                    MaxScore = wDto.MaxScore,
+                    DurationMinutes = wDto.DurationMinutes,
+                    DisplayOrder = wDto.DisplayOrder
+                });
+            }
+
+            // Xử lý Speaking Questions
+            test.SpeakingQuestions.Clear();
+            foreach (var sDto in dto.SpeakingQuestions)
+            {
+                test.SpeakingQuestions.Add(new SpeakingQuestion
+                {
+                    QuestionText = sDto.QuestionText,
+                    PartName = sDto.PartName,
+                    PreparationTimeSeconds = sDto.PreparationTime,
+                    ResponseTimeSeconds = sDto.ResponseTime,
+                    DisplayOrder = sDto.DisplayOrder
+                });
+            }
+
+            // Cập nhật tổng số câu hỏi (TotalQuestions)
+            if (dto.WritingTasks.Any() || dto.SpeakingQuestions.Any())
+            {
+                test.TotalQuestions = dto.WritingTasks.Count + dto.SpeakingQuestions.Count;
+            }
+            else
+            {
+                // Logic cho Reading/Listening
+                test.TotalQuestions = test.Passages.SelectMany(p => p.Questions).Count() +
+                                      test.ListeningParts.SelectMany(lp => lp.QuestionGroups).SelectMany(qg => qg.Questions).Count(q => q.QuestionType != "table-child");
+            }
         }
 
         private Question MapQuestionDtoToEntity(ManageQuestionDto questionDto)

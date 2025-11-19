@@ -53,5 +53,7 @@ namespace ModelClass.OnlineTest
         public virtual ICollection<Passage> Passages { get; set; } = new List<Passage>();
         public virtual ICollection<ListeningPart> ListeningParts { get; set; } = new List<ListeningPart>();
         public virtual ICollection<TestAttempt> TestAttempts { get; set; } = new List<TestAttempt>();
+        public virtual ICollection<WritingTask> WritingTasks { get; set; } = new List<WritingTask>();
+        public virtual ICollection<SpeakingQuestion> SpeakingQuestions { get; set; } = new List<SpeakingQuestion>();
     }
 }

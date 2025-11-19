@@ -17,6 +17,8 @@ namespace OnlineTestService.Dtos
         // Dùng một trong hai, tùy thuộc vào loại đề thi
         public List<ManagePassageDto> Passages { get; set; } = new();
         public List<ManageListeningPartDto> ListeningParts { get; set; } = new();
+        public List<ManageWritingTaskDto> WritingTasks { get; set; } = new();
+        public List<ManageSpeakingQuestionDto> SpeakingQuestions { get; set; } = new();
     }
 
     // --- DTOs cho Reading Test ---
@@ -63,6 +65,26 @@ namespace OnlineTestService.Dtos
         public int Id { get; set; }
         public string OptionLabel { get; set; }
         public string OptionText { get; set; }
+        public int DisplayOrder { get; set; }
+    }
+    public class ManageWritingTaskDto
+    {
+        public int Id { get; set; }
+        public string TaskType { get; set; }
+        public string Prompt { get; set; }
+        public int MinWords { get; set; }
+        public int MaxScore { get; set; }
+        public int DurationMinutes { get; set; }
+        public int DisplayOrder { get; set; }
+    }
+
+    public class ManageSpeakingQuestionDto
+    {
+        public int Id { get; set; }
+        public string QuestionText { get; set; }
+        public string PartName { get; set; }
+        public int PreparationTime { get; set; } // Seconds
+        public int ResponseTime { get; set; } // Seconds
         public int DisplayOrder { get; set; }
     }
 }

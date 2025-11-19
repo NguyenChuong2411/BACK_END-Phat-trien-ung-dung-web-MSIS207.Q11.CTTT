@@ -65,6 +65,8 @@ namespace ModelClass.connection
             modelBuilder.Entity<TestAttempt>().ToTable("testattempts", "online_test");
             modelBuilder.Entity<UserAnswer>().ToTable("useranswers", "online_test");
             modelBuilder.Entity<SkillType>().ToTable("skilltypes", "online_test");
+            modelBuilder.Entity<WritingTask>().ToTable("writingtasks", "online_test");
+            modelBuilder.Entity<SpeakingQuestion>().ToTable("speakingquestions", "online_test");
         }
     }
 }
