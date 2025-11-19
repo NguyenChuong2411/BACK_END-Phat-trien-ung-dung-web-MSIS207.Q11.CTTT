@@ -7,6 +7,7 @@
         public int? SkillTypeId { get; set; }
         public string AudioUrl { get; set; }
         public List<ListeningPartDto> Parts { get; set; } = new List<ListeningPartDto>();
+        public List<PassageDto> Passages { get; set; } = new List<PassageDto>();
     }
     public class ListeningPartDto
     {
