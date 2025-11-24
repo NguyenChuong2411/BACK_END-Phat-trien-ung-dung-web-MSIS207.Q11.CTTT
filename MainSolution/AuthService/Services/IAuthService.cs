@@ -6,5 +6,6 @@ namespace AuthService.Services
     {
         Task<bool> RegisterAsync(RegisterDto registerDto);
         Task<string?> LoginAsync(LoginDto loginDto);
+        Task<string?> GoogleLoginAsync(string idToken);
     }
 }
