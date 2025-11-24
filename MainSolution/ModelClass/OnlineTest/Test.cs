@@ -30,9 +30,30 @@ namespace ModelClass.OnlineTest
         [Column("test_type_id")]
         public int TestTypeId { get; set; }
 
+        [Column("skill_type_id")]
+        public int? SkillTypeId { get; set; }
+
+        [Column("audio_file_id")]
+        public int? AudioFileId { get; set; }
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; }
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; }
+
         [ForeignKey("TestTypeId")]
         public virtual TestType TestType { get; set; }
 
+        [ForeignKey("SkillTypeId")]
+        public virtual SkillType? SkillType { get; set; }
+
+        [ForeignKey("AudioFileId")]
+        public virtual AudioFile? AudioFile { get; set; }
+
         public virtual ICollection<Passage> Passages { get; set; } = new List<Passage>();
+        public virtual ICollection<ListeningPart> ListeningParts { get; set; } = new List<ListeningPart>();
+        public virtual ICollection<TestAttempt> TestAttempts { get; set; } = new List<TestAttempt>();
+        public virtual ICollection<WritingTask> WritingTasks { get; set; } = new List<WritingTask>();
+        public virtual ICollection<SpeakingQuestion> SpeakingQuestions { get; set; } = new List<SpeakingQuestion>();
     }
 }

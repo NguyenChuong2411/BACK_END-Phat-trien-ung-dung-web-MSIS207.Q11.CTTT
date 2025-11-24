@@ -17,7 +17,7 @@ namespace ModelClass.OnlineTest
         public int Id { get; set; }
 
         [Column("passage_id")]
-        public int PassageId { get; set; }
+        public int? PassageId { get; set; }
 
         [Column("question_number")]
         public int QuestionNumber { get; set; }
@@ -34,8 +34,14 @@ namespace ModelClass.OnlineTest
         [Column("correct_answers", TypeName = "jsonb")]
         public JsonDocument CorrectAnswers { get; set; }
 
+        [Column("question_group_id")]
+        public int? QuestionGroupId { get; set; }
+
         [ForeignKey("PassageId")]
         public virtual Passage Passage { get; set; }
+
+        [ForeignKey("QuestionGroupId")]
+        public virtual QuestionGroup? QuestionGroup { get; set; }
 
         public virtual ICollection<QuestionOption> Options { get; set; } = new List<QuestionOption>();
     }
