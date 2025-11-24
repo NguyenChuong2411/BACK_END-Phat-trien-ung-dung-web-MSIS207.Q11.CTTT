@@ -1,11 +1,12 @@
-﻿using ModelClass.Connection;
+﻿using AuthService.Dtos;
+using Google.Apis.Auth;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using ModelClass.Connection;
 using ModelClass.UserInfo;
-using AuthService.Dtos;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.EntityFrameworkCore;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
 
 namespace AuthService.Services.impl
 {
@@ -52,6 +53,48 @@ namespace AuthService.Services.impl
                 return null;
             }
             return GenerateJwtToken(user);
+        }
+
+        public async Task<string?> GoogleLoginAsync(string idToken)
+        {
+            try
+            {
+                // Xác thực Token với Google
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { _configuration["Jwt:GoogleClientId"] }
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
+                var email = payload.Email;
+                var name = payload.Name;
+
+                // Kiểm tra xem user đã tồn tại trong DB chưa
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                if (user == null)
+                {
+                    // Nếu chưa tồn tại -> Tự động đăng ký
+                    user = new User
+                    {
+                        FullName = name,
+                        Email = email,
+                        // Tạo một password ngẫu nhiên vì user này dùng Google
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
+                        CreatedAt = DateTime.UtcNow,
+                        RoleId = 2 // Mặc định là User thường
+                    };
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+                return GenerateJwtToken(user);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Google Login Error: {ex.Message}");
+                return null;
+            }
         }
 
         private string GenerateJwtToken(User user)

@@ -34,5 +34,15 @@ namespace AuthService.Controllers
             }
             return Ok(new { Token = token });
         }
+        [HttpPost("googlelogin")]
+        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto loginDto)
+        {
+            var token = await _authService.GoogleLoginAsync(loginDto.IdToken);
+            if (token == null)
+            {
+                return BadRequest("Google Token không hợp lệ.");
+            }
+            return Ok(new { Token = token });
+        }
     }
 }
