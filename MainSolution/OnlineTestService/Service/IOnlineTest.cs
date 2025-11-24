@@ -9,5 +9,6 @@ namespace OnlineTestService.Service
         Task<ListeningTestDto?> GetListeningTestDetailsByIdAsync(int testId);
         Task<int> SubmitTestAsync(TestSubmissionDto submission);
         Task<TestResultDto?> GetTestResultAsync(int attemptId);
+        Task<IEnumerable<TestAttemptHistoryDto>> GetMyTestHistoryAsync();
     }
 }

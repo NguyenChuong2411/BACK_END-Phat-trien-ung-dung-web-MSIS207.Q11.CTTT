@@ -40,7 +40,8 @@ namespace AuthService.Services.impl
             {
                 Id = user.Id.ToString(),
                 FullName = user.FullName,
-                Email = user.Email
+                Email = user.Email,
+                RoleId = user.RoleId
             };
         }
     }

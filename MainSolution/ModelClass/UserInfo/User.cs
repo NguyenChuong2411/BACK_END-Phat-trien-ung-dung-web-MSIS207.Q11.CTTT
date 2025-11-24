@@ -26,5 +26,7 @@ namespace ModelClass.UserInfo
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
+        [Column("role_id")]
+        public int RoleId { get; set; }
     }
 }

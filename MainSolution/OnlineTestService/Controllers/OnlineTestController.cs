@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OnlineTestService.Dtos;
 using OnlineTestService.Service;
+using System.Security.Claims;
 
 namespace OnlineTestService.Controllers
 {
@@ -69,6 +70,24 @@ namespace OnlineTestService.Controllers
                 return NotFound("Không tìm thấy kết quả làm bài.");
             }
             return Ok(result);
+        }
+        [HttpGet("GetMyTestHistory")]
+        [Authorize]
+        public async Task<IActionResult> GetMyTestHistory()
+        {
+            try
+            {
+                var history = await _onlineTestService.GetMyTestHistoryAsync();
+                return Ok(history);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Lỗi server: " + ex.Message);
+            }
         }
     }
 }
