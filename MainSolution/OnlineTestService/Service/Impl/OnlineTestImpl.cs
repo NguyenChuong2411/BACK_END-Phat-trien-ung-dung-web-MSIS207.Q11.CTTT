@@ -474,6 +474,30 @@ namespace OnlineTestService.Service.Impl
                 return 1;
             }
         }
+        public async Task<IEnumerable<TestAttemptHistoryDto>> GetMyTestHistoryAsync()
+        {
+            var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            {
+                throw new UnauthorizedAccessException("Không thể xác định người dùng hiện tại.");
+            }
+            return await _context.TestAttempts
+                .AsNoTracking()
+                .Where(a => a.UserId == userId)
+                .Include(a => a.Test)
+                    .ThenInclude(t => t.TestType)
+                .OrderByDescending(a => a.SubmittedAt)
+                .Select(a => new TestAttemptHistoryDto
+                {
+                    Id = a.Id,
+                    TestTitle = a.Test.Title,
+                    Score = a.Score,
+                    TotalQuestions = a.TotalQuestions,
+                    SubmittedAt = a.SubmittedAt,
+                    TestType = a.Test.TestType.Name
+                })
+                .ToListAsync();
+        }
 
         private QuestionDto MapQuestionToDto(Question q)
         {

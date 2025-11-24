@@ -1,6 +1,6 @@
-﻿using ModelClass.Connection;      // Using để lấy DbContext
-using ModelClass.UserInfo;        // Using để lấy Model User
-using AuthService.Dtos;           // Using để lấy DTOs
+﻿using ModelClass.Connection;
+using ModelClass.UserInfo;
+using AuthService.Dtos;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +33,8 @@ namespace AuthService.Services.impl
                 Email = registerDto.Email,
                 // Mã hóa mật khẩu bằng BCrypt trước khi lưu
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                RoleId = 2 // Mặc định là role "User"
             };
 
             _context.Users.Add(user);
@@ -66,7 +67,8 @@ namespace AuthService.Services.impl
                     // "Claims" là các thông tin về người dùng sẽ được lưu trong token
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Name, user.FullName)
+                    new Claim(ClaimTypes.Name, user.FullName),
+                    new Claim("role_id", user.RoleId.ToString())
                 }),
                 // Token sẽ hết hạn sau 7 ngày
                 Expires = DateTime.UtcNow.AddDays(7),
