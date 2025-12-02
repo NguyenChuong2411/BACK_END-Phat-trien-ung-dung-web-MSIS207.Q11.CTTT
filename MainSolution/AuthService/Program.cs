@@ -1,6 +1,7 @@
 ﻿using AuthService.Services;       // Namespace của IAuthService
 using AuthService.Services.impl;  // Namespace của AuthServiceImpl
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ModelClass.Connection;
@@ -33,7 +34,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.EnableAnnotations();
-    //options.CustomSchemaIds(type => type.ToString());
+    options.CustomSchemaIds(type => type.ToString());
+
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Enly Authentication Service",
+        Version = "v1",
+        Description = "API documentation for Enly Authentication Service"
+    });
 });
 
 builder.Services.AddAuthentication(options =>
@@ -57,12 +65,21 @@ builder.Services.AddAuthentication(options =>
 
 // --- Xây dựng App ---
 var app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 // --- Cấu hình Middleware Pipeline ---
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Enly Auth Service v1");
+    options.RoutePrefix = "api/doc";
+    options.HeadContent = "<style>.swagger-ui .info .url { display: none !important; }</style>";
+});
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
 app.UseAuthentication();
 app.UseAuthorization();
