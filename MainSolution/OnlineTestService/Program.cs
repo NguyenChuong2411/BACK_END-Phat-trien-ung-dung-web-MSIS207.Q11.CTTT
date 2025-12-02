@@ -36,7 +36,10 @@ builder.Services.AddControllers();
 
 // Swagger để test API
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.EnableAnnotations();
+});
 
 builder.Services.AddHttpContextAccessor();
 
