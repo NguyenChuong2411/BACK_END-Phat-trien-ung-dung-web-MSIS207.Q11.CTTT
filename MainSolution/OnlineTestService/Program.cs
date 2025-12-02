@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.IdentityModel.Tokens;
 using ModelClass.connection;
 using OnlineTestService.Service;
 using OnlineTestService.Service.Impl;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.EnableAnnotations();
+    options.CustomSchemaIds(type => type.ToString());
+
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Enly Online Test Service",
+        Version = "v1",
+        Description = "API documentation for Enly Online Test Service"
+    });
 });
 
 builder.Services.AddHttpContextAccessor();
@@ -64,10 +73,19 @@ builder.Services.AddAuthentication(options =>
 });
 
 var app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Enly Online Test Service v1");
+    options.RoutePrefix = "api/doc";
+    options.HeadContent = "<style>.swagger-ui .info .url { display: none !important; }</style>";
+});
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseCors("AllowVueApp");
 app.UseStaticFiles();
 var storagePath = Path.Combine(builder.Environment.ContentRootPath, "Storage");

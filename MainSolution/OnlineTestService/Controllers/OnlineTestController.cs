@@ -23,46 +23,72 @@ namespace OnlineTestService.Controllers
         [HttpGet("GetAllTests")]
         [SwaggerOperation(Summary = "Lấy danh sách tất cả bài test", Description = "Trả về danh sách tóm tắt các bài thi hiện có.")]
         [SwaggerResponse(200, "Danh sách bài thi lấy thành công", typeof(IEnumerable<TestListItemDto>))]
+        [SwaggerResponse(500, "Lỗi Server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetAllTests()
         {
-            var tests = await _onlineTestService.GetAllTestsAsync();
-            return Ok(tests);
+            try
+            {
+                var tests = await _onlineTestService.GetAllTestsAsync();
+                return Ok(tests);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi khi lấy danh sách bài thi: " + ex.Message));
+            }
         }
 
         // Lấy chi tiết một bài test theo id
         [HttpGet("GetTestDetails/{id}")]
         [SwaggerOperation(Summary = "Lấy chi tiết đề thi", Description = "Bao gồm các đoạn văn, câu hỏi Reading, Speaking, Writing.")]
         [SwaggerResponse(200, "Chi tiết đề thi", typeof(FullTestDto))]
-        [SwaggerResponse(404, "Không tìm thấy đề thi với ID này")]
+        [SwaggerResponse(404, "Không tìm thấy đề thi với ID này", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi Server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetTestDetails(int id)
         {
-            var testDetails = await _onlineTestService.GetTestDetailsByIdAsync(id);
-            if (testDetails == null)
+            try
             {
-                return NotFound($"Không tìm thấy bài test với ID = {id}");
+                var testDetails = await _onlineTestService.GetTestDetailsByIdAsync(id);
+                if (testDetails == null)
+                {
+                    return NotFound(new ErrorResponse(404, $"Không tìm thấy bài test với ID = {id}"));
+                }
+                return Ok(testDetails);
             }
-            return Ok(testDetails);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server: " + ex.Message));
+            }
         }
         // Lấy chi tiết bài thi listening
         [HttpGet("GetListeningTestDetails/{id}")]
         [SwaggerOperation(Summary = "Lấy chi tiết đề thi Nghe", Description = "Bao gồm đường dẫn file audio và các câu hỏi.")]
         [SwaggerResponse(200, "Chi tiết đề thi Listening", typeof(ListeningTestDto))]
-        [SwaggerResponse(404, "Không tìm thấy đề thi hoặc file Audio")]
+        [SwaggerResponse(404, "Không tìm thấy đề thi hoặc file Audio", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi Server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetListeningTestDetails(int id)
         {
-            var testDetails = await _onlineTestService.GetListeningTestDetailsByIdAsync(id);
-            if (testDetails == null)
+            try
             {
-                return NotFound($"Không tìm thấy bài thi Listening với ID = {id}");
+                var testDetails = await _onlineTestService.GetListeningTestDetailsByIdAsync(id);
+                if (testDetails == null)
+                {
+                    return NotFound(new ErrorResponse(404, $"Không tìm thấy bài thi Listening với ID = {id}"));
+                }
+                return Ok(testDetails);
             }
-            return Ok(testDetails);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server: " + ex.Message));
+            }
         }
+
         [HttpPost("Submit")]
         [Authorize]
         [SwaggerOperation(Summary = "Nộp bài thi", Description = "Chấm điểm tự động và lưu kết quả.")]
         [SwaggerResponse(200, "Nộp bài thành công. Trả về AttemptId (ID lượt thi).", typeof(object))]
-        [SwaggerResponse(401, "Người dùng chưa đăng nhập")]
-        [SwaggerResponse(500, "Lỗi server trong quá trình chấm điểm")]
+        [SwaggerResponse(401, "Người dùng chưa đăng nhập", typeof(ErrorResponse))]
+        [SwaggerResponse(404, "Bài thi không tồn tại", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi server trong quá trình chấm điểm", typeof(ErrorResponse))]
         public async Task<IActionResult> SubmitTest([FromBody] TestSubmissionDto submission)
         {
             try
@@ -70,29 +96,48 @@ namespace OnlineTestService.Controllers
                 var attemptId = await _onlineTestService.SubmitTestAsync(submission);
                 return Ok(new { AttemptId = attemptId });
             }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new ErrorResponse(404, ex.Message));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new ErrorResponse(401, ex.Message));
+            }
             catch (Exception ex)
             {
-                return StatusCode(500, "Đã xảy ra lỗi khi nộp bài.");
+                return StatusCode(500, new ErrorResponse(500, "Đã xảy ra lỗi khi nộp bài: " + ex.Message));
             }
         }
+
         [HttpGet("Result/{attemptId}")]
         [SwaggerOperation(Summary = "Xem kết quả bài thi", Description = "Xem lại điểm số và đáp án chi tiết của một lượt thi.")]
         [SwaggerResponse(200, "Kết quả bài thi", typeof(TestResultDto))]
-        [SwaggerResponse(404, "Không tìm thấy kết quả")]
+        [SwaggerResponse(404, "Không tìm thấy kết quả", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi Server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetResult(int attemptId)
         {
-            var result = await _onlineTestService.GetTestResultAsync(attemptId);
-            if (result == null)
+            try
             {
-                return NotFound("Không tìm thấy kết quả làm bài.");
+                var result = await _onlineTestService.GetTestResultAsync(attemptId);
+                if (result == null)
+                {
+                    return NotFound(new ErrorResponse(404, "Không tìm thấy kết quả làm bài."));
+                }
+                return Ok(result);
             }
-            return Ok(result);
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server: " + ex.Message));
+            }
         }
+
         [HttpGet("GetMyTestHistory")]
         [Authorize]
         [SwaggerOperation(Summary = "Lịch sử thi của tôi", Description = "Lấy danh sách các bài đã thi của người dùng hiện tại.")]
         [SwaggerResponse(200, "Danh sách lịch sử thi", typeof(IEnumerable<TestAttemptHistoryDto>))]
-        [SwaggerResponse(401, "Chưa đăng nhập")]
+        [SwaggerResponse(401, "Chưa đăng nhập", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi Server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetMyTestHistory()
         {
             try
@@ -102,11 +147,11 @@ namespace OnlineTestService.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(ex.Message);
+                return Unauthorized(new ErrorResponse(401, ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Lỗi server: " + ex.Message);
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server: " + ex.Message));
             }
         }
     }

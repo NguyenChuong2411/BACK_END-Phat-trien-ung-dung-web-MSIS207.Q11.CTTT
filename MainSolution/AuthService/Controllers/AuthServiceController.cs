@@ -16,44 +16,71 @@ namespace AuthService.Controllers
         {
             _authService = authService;
         }
+
         [HttpPost("register")]
-        [SwaggerOperation(Summary = "Đăng ký tài khoản mới", Description = "Tạo tài khoản người dùng với Email và Mật khẩu. Role mặc định là User.")]
+        [SwaggerOperation(Summary = "Đăng ký tài khoản mới", Description = "Tạo tài khoản người dùng với Email và Mật khẩu.")]
         [SwaggerResponse(200, "Đăng ký thành công", typeof(object))]
-        [SwaggerResponse(400, "Email đã tồn tại trong hệ thống")]
+        [SwaggerResponse(400, "Email đã tồn tại", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi server", typeof(ErrorResponse))]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            var result = await _authService.RegisterAsync(registerDto);
-            if (!result)
+            try
             {
-                return BadRequest("Email đã được sử dụng.");
+                var result = await _authService.RegisterAsync(registerDto);
+                if (!result)
+                {
+                    return BadRequest(new ErrorResponse(400, "Email đã được sử dụng."));
+                }
+                return Ok(new { Message = "Đăng ký thành công." });
             }
-            return Ok(new { Message = "Đăng ký thành công." });
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi khi đăng ký: " + ex.Message));
+            }
         }
+
         [HttpPost("login")]
         [SwaggerOperation(Summary = "Đăng nhập hệ thống", Description = "Đăng nhập bằng Email/Password để lấy JWT Token.")]
-        [SwaggerResponse(200, "Đăng nhập thành công. Trả về Token.", typeof(object))]
-        [SwaggerResponse(401, "Email hoặc mật khẩu không chính xác")]
+        [SwaggerResponse(200, "Đăng nhập thành công", typeof(object))]
+        [SwaggerResponse(401, "Sai email hoặc mật khẩu", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi server", typeof(ErrorResponse))]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var token = await _authService.LoginAsync(loginDto);
-            if (token == null)
+            try
             {
-                return Unauthorized("Email hoặc mật khẩu không chính xác.");
+                var token = await _authService.LoginAsync(loginDto);
+                if (token == null)
+                {
+                    return Unauthorized(new ErrorResponse(401, "Email hoặc mật khẩu không chính xác."));
+                }
+                return Ok(new { Token = token });
             }
-            return Ok(new { Token = token });
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi khi đăng nhập: " + ex.Message));
+            }
         }
+
         [HttpPost("googlelogin")]
-        [SwaggerOperation(Summary = "Đăng nhập bằng Google", Description = "Sử dụng Google ID Token để đăng nhập hoặc tự động đăng ký nếu chưa có tài khoản.")]
-        [SwaggerResponse(200, "Thành công. Trả về JWT Token hệ thống.", typeof(object))]
-        [SwaggerResponse(400, "Google Token không hợp lệ hoặc lỗi xác thực")]
+        [SwaggerOperation(Summary = "Đăng nhập bằng Google", Description = "Sử dụng Google ID Token để đăng nhập/đăng ký.")]
+        [SwaggerResponse(200, "Thành công", typeof(object))]
+        [SwaggerResponse(400, "Google Token không hợp lệ", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi server", typeof(ErrorResponse))]
         public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto loginDto)
         {
-            var token = await _authService.GoogleLoginAsync(loginDto.IdToken);
-            if (token == null)
+            try
             {
-                return BadRequest("Google Token không hợp lệ.");
+                var token = await _authService.GoogleLoginAsync(loginDto.IdToken);
+                if (token == null)
+                {
+                    return BadRequest(new ErrorResponse(400, "Google Token không hợp lệ hoặc lỗi xác thực với Google."));
+                }
+                return Ok(new { Token = token });
             }
-            return Ok(new { Token = token });
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server khi đăng nhập Google: " + ex.Message));
+            }
         }
     }
 }
