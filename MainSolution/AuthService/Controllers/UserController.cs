@@ -21,22 +21,28 @@ namespace AuthService.Controllers
         }
 
         [HttpGet("GetUserProfile")]
-        [SwaggerOperation(Summary = "Lấy thông tin cá nhân (Profile)", Description = "Lấy thông tin User dựa trên Token đang đăng nhập.")]
+        [SwaggerOperation(Summary = "Lấy thông tin cá nhân", Description = "Lấy thông tin User dựa trên Token đang đăng nhập.")]
         [SwaggerResponse(200, "Lấy thông tin thành công", typeof(UserProfileDto))]
-        [SwaggerResponse(401, "Chưa đăng nhập hoặc Token hết hạn")]
-        [SwaggerResponse(404, "Không tìm thấy thông tin người dùng trong DB")]
+        [SwaggerResponse(401, "Chưa đăng nhập hoặc Token hết hạn", typeof(ErrorResponse))]
+        [SwaggerResponse(404, "Không tìm thấy thông tin người dùng", typeof(ErrorResponse))]
+        [SwaggerResponse(500, "Lỗi server", typeof(ErrorResponse))]
         public async Task<IActionResult> GetUserProfile()
         {
-            // `User` ở đây là ClaimsPrincipal, được tự động điền bởi ASP.NET Core
-            // sau khi xác thực token thành công.
-            var userProfile = await _userService.GetUserProfileAsync(User);
-
-            if (userProfile == null)
+            try
             {
-                return NotFound("Không tìm thấy thông tin người dùng.");
-            }
+                var userProfile = await _userService.GetUserProfileAsync(User);
 
-            return Ok(userProfile);
+                if (userProfile == null)
+                {
+                    return NotFound(new ErrorResponse(404, "Không tìm thấy thông tin người dùng trong cơ sở dữ liệu."));
+                }
+
+                return Ok(userProfile);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ErrorResponse(500, "Lỗi server khi lấy thông tin user: " + ex.Message));
+            }
         }
     }
 }
