@@ -1,12 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OnlineTestService.Dtos;
 using OnlineTestService.Service;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace OnlineTestService.Controllers
 {
     [ApiController]
     [Route("api/onlineTest/[controller]")]
     //[Authorize(Roles = "Admin")]
+    [SwaggerTag("Quản lý đề thi (Dành cho Admin)")]
     public class TestAdminController : ControllerBase
     {
         private readonly ITestAdminService _adminService;
@@ -21,6 +23,10 @@ namespace OnlineTestService.Controllers
         [HttpPost("UploadAudio")]
         [RequestFormLimits(ValueLengthLimit = int.MaxValue, MultipartBodyLengthLimit = int.MaxValue)] // Allow large files
         [DisableRequestSizeLimit] // Allow large files
+        [SwaggerOperation(Summary = "Upload file âm thanh", Description = "Upload file MP3/WAV cho bài thi Listening. Trả về ID của file để gán vào bài thi.")]
+        [SwaggerResponse(200, "Upload thành công. Trả về { audioFileId: int }", typeof(object))]
+        [SwaggerResponse(400, "File không hợp lệ hoặc chưa chọn file")]
+        [SwaggerResponse(500, "Lỗi server khi lưu file")]
         public async Task<IActionResult> UploadAudioFile(IFormFile audioFile) // Parameter name must match FormData key
         {
             if (audioFile == null || audioFile.Length == 0)
@@ -47,6 +53,8 @@ namespace OnlineTestService.Controllers
         }
 
         [HttpGet("GetAllTestsForAdmin")]
+        [SwaggerOperation(Summary = "Lấy danh sách quản lý đề thi", Description = "Danh sách dạng bảng, bao gồm ngày tạo, ngày sửa để Admin quản lý.")]
+        [SwaggerResponse(200, "Danh sách đề thi", typeof(IEnumerable<AdminTestListItemDto>))]
         public async Task<IActionResult> GetAllTestsForAdmin()
         {
             var tests = await _adminService.GetAllTestsForAdminAsync();
@@ -54,6 +62,10 @@ namespace OnlineTestService.Controllers
         }
 
         [HttpPost("CreateTest")]
+        [SwaggerOperation(Summary = "Tạo đề thi mới", Description = "Tạo mới một cấu trúc đề thi bao gồm các câu hỏi và settings.")]
+        [SwaggerResponse(201, "Tạo thành công. Trả về ID bài thi mới.", typeof(object))]
+        [SwaggerResponse(400, "Dữ liệu đầu vào không hợp lệ (thiếu trường bắt buộc)")]
+        [SwaggerResponse(500, "Lỗi server khi lưu dữ liệu")]
         public async Task<IActionResult> CreateTest([FromBody] ManageTestDto createTestDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -63,6 +75,10 @@ namespace OnlineTestService.Controllers
         }
 
         [HttpPut("UpdateTest/{id}")]
+        [SwaggerOperation(Summary = "Cập nhật đề thi", Description = "Cập nhật toàn bộ nội dung đề thi theo ID.")]
+        [SwaggerResponse(204, "Cập nhật thành công (Không trả về dữ liệu)")]
+        [SwaggerResponse(400, "Dữ liệu gửi lên không hợp lệ")]
+        [SwaggerResponse(404, "Không tìm thấy đề thi cần sửa")]
         public async Task<IActionResult> UpdateTest(int id, [FromBody] ManageTestDto updateTestDto)
         {
             var success = await _adminService.UpdateTestAsync(id, updateTestDto);
@@ -72,6 +88,9 @@ namespace OnlineTestService.Controllers
         }
 
         [HttpDelete("DeleteTest/{id}")]
+        [SwaggerOperation(Summary = "Xóa đề thi", Description = "Xóa vĩnh viễn đề thi khỏi hệ thống.")]
+        [SwaggerResponse(204, "Xóa thành công")]
+        [SwaggerResponse(404, "Không tìm thấy đề thi cần xóa")]
         public async Task<IActionResult> DeleteTest(int id)
         {
             var success = await _adminService.DeleteTestAsync(id);
@@ -82,6 +101,9 @@ namespace OnlineTestService.Controllers
 
         // Endpoint để lấy dữ liệu test cho việc sửa
         [HttpGet("GetTestById/{id}")]
+        [SwaggerOperation(Summary = "Lấy dữ liệu đề thi để sửa", Description = "Trả về full cấu trúc đề thi để fill vào form chỉnh sửa.")]
+        [SwaggerResponse(200, "Dữ liệu chi tiết đề thi", typeof(ManageTestDto))]
+        [SwaggerResponse(404, "Không tìm thấy đề thi")]
         public async Task<IActionResult> GetTestById(int id)
         {
             var testData = await _adminService.GetTestForEditAsync(id);
@@ -94,6 +116,10 @@ namespace OnlineTestService.Controllers
             return Ok(testData);
         }
         [HttpDelete("DeleteAudio/{audioFileId}")]
+        [SwaggerOperation(Summary = "Xóa file âm thanh", Description = "Xóa file audio khỏi hệ thống (chỉ xóa được nếu chưa có bài test nào sử dụng).")]
+        [SwaggerResponse(204, "Xóa thành công")]
+        [SwaggerResponse(404, "File không tồn tại hoặc lỗi khi xóa")]
+        [SwaggerResponse(500, "Lỗi server nội bộ")]
         public async Task<IActionResult> DeleteAudio(int audioFileId)
         {
             try
